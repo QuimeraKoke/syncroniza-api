@@ -8,13 +8,14 @@ import {CustomRequest} from "../interfaces/interfaces";
 
 // Create Project - with planifications
 export const createProject = async (req: Request, res: Response) => {
-    const { name, codename, startDate, endDate, budgets, families, workload } = req.body;
+    const { name, codename, startDate, endDate, budgets, families, workload, organizationId } = req.body;
 
     try {
         // Create the project document
         const project = await Project.create({
             name,
             codename,
+            organizationId,
             startDate: startOfDay(parseISO(startDate)),
             endDate: endOfDay(parseISO(endDate)),
             budgets,
