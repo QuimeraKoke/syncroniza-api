@@ -14,7 +14,7 @@ const port : number = 3000;
 connect()
 
 const whiteList = [
-    "https://e49c-200-28-224-90.ngrok-free.app",
+    "https://www.syncroniza.cl",
     "http://localhost:3001"
 ]
 
@@ -38,5 +38,5 @@ app.use('/', oauthMiddle, appRouter);
 
 
 app.listen(port, () => {
-  return console.log(`Express is listening at http://localhost:${port}`);
+  return console.log(`Express is listening at ${port}`);
 });
