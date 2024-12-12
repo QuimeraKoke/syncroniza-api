@@ -15,11 +15,17 @@ COPY . .
 
 RUN npm run build
 
-FROM nginx:1.21.3
+FROM node:20-bullseye
 
-COPY --from=build /usr/src/app/dist /usr/share/nginx/html
+COPY --from=build /usr/src/app/dist /usr/src/app/dist
 
-EXPOSE 80
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm install --only=production
+
+EXPOSE 3000
 
 
 
