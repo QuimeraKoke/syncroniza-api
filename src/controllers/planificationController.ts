@@ -87,7 +87,7 @@ export const createPlanification = async (req: CustomRequest, res: Response) => 
 // Update Planification Week
 export const updatePlanification = async (req: CustomRequest, res: Response) => {
     const { planificationId } = req.params;
-    const { planifiedEarnValue, planifiedEarnValuePercentage, earnValue } = req.body;
+    const { planifiedEarnValue, planifiedEarnValuePercentage, earnValue, workloadValues } = req.body;
 
     try {
         // Find the planification by ID
@@ -110,6 +110,10 @@ export const updatePlanification = async (req: CustomRequest, res: Response) => 
         }
         if (earnValue !== undefined) {
             planification.earnValue = earnValue;
+        }
+
+        if (workloadValues !== undefined) {
+            planification.workloadValues = workloadValues;
         }
 
         // Save the updated planification

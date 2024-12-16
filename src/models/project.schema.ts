@@ -26,6 +26,7 @@ const ProjectSchema = new Schema({
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     organizationId: { type: String, required: true },
+    apiKey: { type: String, required: true },
     budgets: { type: [BudgetSchema], default: [] },
     families: { type: [FamilySchema], default: [] },
     workload: { type: [WorkloadSchema], default: [] },
@@ -40,6 +41,7 @@ export interface IProject extends Document {
     startDate: Date;
     endDate: Date;
     organizationId: string;
+    apiKey: string;
     budgets: Array<{
         name: string;
         isMain: boolean;
