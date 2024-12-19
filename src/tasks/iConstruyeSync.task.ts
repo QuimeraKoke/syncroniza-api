@@ -1,7 +1,7 @@
 import connect from '../config/mongo.config';
 import axios from 'axios';
 import Transaction from '../models/transaction.schema';
-import Project from '../models/project.schema';
+import Project, {IProject} from '../models/project.schema';
 import ControlSheet from '../models/controlSheet.schema';
 import moongoose from 'mongoose';
 
@@ -23,14 +23,16 @@ const dateToString = (date) => {
     return `${year}-${monthString}-${dayString} ${hoursString}:${minutesString}:${secondsString}`;
 }
 
-export const getInvoices = async (startDate: Date, endDate: Date, orgID: string) => {
+export const getInvoices = async (startDate: Date, endDate: Date, project: IProject) => {
     let invoices = [];
 
     let axiosClient = axios.create({
         baseURL: "https://api.iconstruye.com",
         timeout: 10000,
         headers: {
-            "Ocp-Apim-Subscription-Key": "155bcbb40e44403e90a03b9d03457a87"
+            "Ocp-Apim-Subscription-Key": project.apiKey
+            // "Ocp-Apim-Subscription-Key": "155bcbb40e44403e90a03b9d03457a87"
+            // "Ocp-Apim-Subscription-Key": "cd0c9d70fb1248afb81c6238f8d8bc9e"
         }
     })
 
@@ -39,8 +41,9 @@ export const getInvoices = async (startDate: Date, endDate: Date, orgID: string)
     let tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() + 29));
 
     while (tmpEndDate <= endDate) {
-        let url = `/cvbf/api/Factura/Buscar?api-version=1.0&IdOrgc=${orgID}&FechaRecepDesde=${dateToString(tmpStartDate)}&FechaRecepHasta=${dateToString(tmpEndDate)}`;
+        let url = `/cvbf/api/Factura/Buscar?api-version=1.0&IdOrgc=${project.organizationId}&FechaRecepDesde=${dateToString(tmpStartDate)}&FechaRecepHasta=${dateToString(tmpEndDate)}`;
 
+        console.log(url);
         let response = await axiosClient.get(url);
 
         console.log(`Getting invoices from ${dateToString(tmpStartDate)} to ${dateToString(tmpEndDate)}`);
@@ -57,12 +60,13 @@ export const getInvoices = async (startDate: Date, endDate: Date, orgID: string)
     return invoices;
 }
 
-const getInvoiceDetails = async (invoiceId: string) => {
+const getInvoiceDetails = async (invoiceId: string, project: IProject) => {
     let axiosClient = axios.create({
         baseURL: "https://api.iconstruye.com",
         timeout: 10000,
         headers: {
-            "Ocp-Apim-Subscription-Key": "155bcbb40e44403e90a03b9d03457a87"
+            "Ocp-Apim-Subscription-Key": project.apiKey
+            // "Ocp-Apim-Subscription-Key": "cd0c9d70fb1248afb81c6238f8d8bc9e"
         }
     })
 
@@ -78,12 +82,12 @@ const syncInvoices = async (project: any, controlSheets: any[]) => {
 
     const families = project.families;
 
-    const invoices = await getInvoices(startDate, endDate, project.organizationId);
+    const invoices = await getInvoices(startDate, endDate, project);
 
     for (let invoice of invoices) {
         try {
             let invoiceId = invoice.idDocumento;
-            let invoiceDetails = await getInvoiceDetails(invoiceId);
+            let invoiceDetails = await getInvoiceDetails(invoiceId, project);
             // sleep a random time between 500  and 800 ms
             let sleepTime = Math.floor(Math.random() * 300) + 500;
             await new Promise((resolve) => setTimeout(resolve, sleepTime));
@@ -138,14 +142,16 @@ const syncInvoices = async (project: any, controlSheets: any[]) => {
     console.log(`Invoices Project ${project.name} synced successfully`);
 }
 
-export const getOCs = async (startDate: Date, endDate: Date, orgID: string) => {
+export const getOCs = async (startDate: Date, endDate: Date, project: IProject) => {
     let OCs = [];
 
     let axiosClient = axios.create({
         baseURL: "https://api.iconstruye.com",
         timeout: 10000,
         headers: {
-            "Ocp-Apim-Subscription-Key": "05a4707486cc4b29b07831f5f4fe8bc6"
+            "Ocp-Apim-Subscription-Key": project.apiKeyOC
+            // "Ocp-Apim-Subscription-Key": "386efd5c79ae430ca1ed0e3249adcc53"
+            // "Ocp-Apim-Subscription-Key": "05a4707486cc4b29b07831f5f4fe8bc6"
         }
     })
 
@@ -156,7 +162,7 @@ export const getOCs = async (startDate: Date, endDate: Date, orgID: string) => {
     while (tmpEndDate <= endDate) {
         let url = `ordencompra/api/ConectorBuscarOrdenCompra`;
         url = `${url}?FechaCreacionDesde=${dateToString(tmpStartDate)}&FechaCreacionHasta=${dateToString(tmpEndDate)}`;
-        url = `${url}&IdOrgcOC=${orgID}&IdEstadoOc=-1&IdTipoOc=-1`;
+        url = `${url}&IdOrgcOC=${project.organizationId}&IdEstadoOc=-1&IdTipoOc=-1`;
 
         let response = await axiosClient.get(url);
 
@@ -174,12 +180,13 @@ export const getOCs = async (startDate: Date, endDate: Date, orgID: string) => {
     return OCs;
 }
 
-export const getOCDetails = async (OCId: string) => {
+export const getOCDetails = async (OCId: string, project: IProject) => {
     let axiosClient = axios.create({
         baseURL: "https://api.iconstruye.com",
         timeout: 10000,
         headers: {
-            "Ocp-Apim-Subscription-Key": "05a4707486cc4b29b07831f5f4fe8bc6"
+            "Ocp-Apim-Subscription-Key": project.apiKeyOC
+            // "Ocp-Apim-Subscription-Key": "386efd5c79ae430ca1ed0e3249adcc53"
         }
     })
 
@@ -195,13 +202,13 @@ export const syncOCs = async (project: any, controlSheets: any[]) => {
 
     const families = project.families;
 
-    const OCs = await getOCs(startDate, endDate, project.organizationId);
+    const OCs = await getOCs(startDate, endDate, project);
 
     for (let OC of OCs) {
         try {
 
             let OCId = OC.idDocumento;
-            let OCDetails = await getOCDetails(OCId);
+            let OCDetails = await getOCDetails(OCId, project);
             // sleep a random time between 500  and 800 ms
             let sleepTime = Math.floor(Math.random() * 300) + 500;
             await new Promise((resolve) => setTimeout(resolve, sleepTime));
@@ -250,14 +257,15 @@ export const syncOCs = async (project: any, controlSheets: any[]) => {
     }
 }
 
-export const getNNCCs = async (startDate: Date, endDate: Date, orgID: string) => {
+export const getNNCCs = async (startDate: Date, endDate: Date, project: IProject) => {
     let NNCCs = [];
 
     let axiosClient = axios.create({
         baseURL: "https://api.iconstruye.com",
         timeout: 10000,
         headers: {
-            "Ocp-Apim-Subscription-Key": "155bcbb40e44403e90a03b9d03457a87"
+            "Ocp-Apim-Subscription-Key": project.apiKey
+            // "Ocp-Apim-Subscription-Key": "cd0c9d70fb1248afb81c6238f8d8bc9e"
         }
     })
 
@@ -266,7 +274,7 @@ export const getNNCCs = async (startDate: Date, endDate: Date, orgID: string) =>
     let tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() + 29));
 
     while (tmpEndDate <= endDate) {
-        let url = `/cvbf/api/NotasCorreccion/Buscar?api-version=1.0&IdOrgc=${orgID}&FechaRecepDesde=${dateToString(tmpStartDate)}&FechaRecepHasta=${dateToString(tmpEndDate)}`;
+        let url = `/cvbf/api/NotasCorreccion/Buscar?api-version=1.0&IdOrgc=${project.organizationId}&FechaRecepDesde=${dateToString(tmpStartDate)}&FechaRecepHasta=${dateToString(tmpEndDate)}`;
 
         let response = await axiosClient.get(url);
 
@@ -284,12 +292,13 @@ export const getNNCCs = async (startDate: Date, endDate: Date, orgID: string) =>
     return NNCCs;
 }
 
-export const getNNCCDetails = async (NNCCId: string) => {
+export const getNNCCDetails = async (NNCCId: string, project: IProject) => {
     let axiosClient = axios.create({
         baseURL: "https://api.iconstruye.com",
         timeout: 10000,
         headers: {
-            "Ocp-Apim-Subscription-Key": "155bcbb40e44403e90a03b9d03457a87"
+            "Ocp-Apim-Subscription-Key": project.apiKey
+            // "Ocp-Apim-Subscription-Key": "cd0c9d70fb1248afb81c6238f8d8bc9e"
         }
     })
 
@@ -305,7 +314,7 @@ export const syncNNCCs = async (project: any, controlSheets: any[]) => {
 
     const families = project.families;
 
-    const NNCCs = await getNNCCs(startDate, endDate, project.organizationId);
+    const NNCCs = await getNNCCs(startDate, endDate, project);
 
     // console.log(NNCCs[0]);
 
@@ -345,20 +354,22 @@ const syncProject = async (projectId: string) => {
     const project = await Project.findById(projectId).lean();
     const controlSheets = await ControlSheet.find({project: projectId}).lean();
 
+    console.log(`Syncing Invoices for project ${project.name}`);
+    await syncInvoices(project, controlSheets);
+
+    console.log("-------------------------------------------------");
+    console.log(`Invoices Project ${project.name} synced successfully`);
+
     console.log(`Syncing OCs for project ${project.name}`);
     await syncOCs(project, controlSheets);
 
     console.log("-------------------------------------------------");
     console.log(`OC Project ${project.name} synced successfully`);
 
-    // console.log(`Syncing Invoices for project ${project.name}`);
-    await syncInvoices(project, controlSheets);
-    //
-    // console.log("-------------------------------------------------");
-    // console.log(`Invoices Project ${project.name} synced successfully`);
-    //
-    // console.log(`Syncing NNCCs for project ${project.name}`);
-    // await syncNNCCs(project, controlSheets);
+
+
+    console.log(`Syncing NNCCs for project ${project.name}`);
+    await syncNNCCs(project, controlSheets);
 
     console.log("-------------------------------------------------");
     console.log(`NNCCs Project ${project.name} synced successfully`);
@@ -367,11 +378,11 @@ const syncProject = async (projectId: string) => {
 export const iConstruyeSync = async () => {
     await connect();
 
-    const projects = await Project.find();
+    const projects = await Project.find().sort({createdAt: -1}).lean();
 
-    for (let project of projects) {
-        await syncProject(project._id.toString());
-    }
+    // for (let project of projects) {
+        await syncProject(projects[0]._id.toString());
+    // }
 
     process.exit(0);
 }
