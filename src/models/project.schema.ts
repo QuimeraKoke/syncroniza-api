@@ -11,6 +11,7 @@ const FamilySchema = new Schema({
     name: { type: String, required: true },
     budget: { type: Number, required: true },
     code: { type: String, required: true },
+    selectable: { type: Boolean, default: true },
 });
 
 const WorkloadSchema = new Schema({

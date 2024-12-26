@@ -380,9 +380,9 @@ export const iConstruyeSync = async () => {
 
     const projects = await Project.find().sort({createdAt: -1}).lean();
 
-    // for (let project of projects) {
-        await syncProject(projects[0]._id.toString());
-    // }
+    for (let project of projects) {
+        await syncProject(project._id.toString());
+    }
 
     process.exit(0);
 }
