@@ -50,11 +50,11 @@ export const createTransaction = async (req: Request, res: Response) => {
 };
 
 export const getAllTransactions = async (req: Request, res: Response) => {
-    const { projectId, controlSheetId } = req.query;
+    const { project, controlSheetId } = req.query;
 
     try {
         const query: any = {};
-        if (projectId) query.project = projectId;
+        if (project) query.project = project;
         if (controlSheetId) query.controlSheet = controlSheetId;
 
         const transactions = await Transaction.find(query)
