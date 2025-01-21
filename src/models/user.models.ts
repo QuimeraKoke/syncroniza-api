@@ -1,12 +1,18 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+enum UserRole {
+    ADMIN = 'admin',
+    USER = 'user',
+}
+
 // User Schema
 const UserSchema = new Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, match: /^\S+@\S+\.\S+$/ }, // Email format validation
     password: { type: String, required: true },
     token: { type: String, default: '' }, // Optionally, can store a session or authentication token
+    role: { type: String, default: UserRole.USER }, // Optionally, can store user role
     projects: [{ type: Schema.Types.ObjectId, ref: 'Project' }], // Reference to Project model
 }, {
     timestamps: true, // Adds createdAt and updatedAt timestamps
@@ -35,6 +41,7 @@ export interface IUser extends Document {
     email: string;
     password: string;
     token: string;
+    role: UserRole;
     projects: mongoose.Types.ObjectId[]; // Array of Project ObjectIds
     comparePassword(candidatePassword: string): Promise<boolean>;
 }

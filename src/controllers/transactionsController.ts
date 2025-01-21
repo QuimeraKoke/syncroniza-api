@@ -99,10 +99,16 @@ export const updateTransaction = async (req: Request, res: Response) => {
             }
         }
 
-        const transaction = await Transaction.findByIdAndUpdate(transactionId, updateData, { new: true });
+        let transaction = await Transaction.findByIdAndUpdate(transactionId, updateData, { new: true });
 
         if (!transaction) {
             return res.status(404).json({ message: 'Transaction not found' });
+        }
+
+        // Populate controlSheet and project fields
+        if (transaction) {
+            transaction = await transaction.populate('project', 'name')
+            transaction = await transaction.populate('controlSheet', 'name')
         }
 
         res.status(200).json({ message: 'Transaction updated successfully', transaction });
