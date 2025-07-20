@@ -114,21 +114,28 @@ const syncInvoices = async (project: any, controlSheets: any[]) => {
                 // continue;
             }
 
-            let transaction = await Transaction.findOneAndUpdate({externalID: invoiceId}, {
+            let transactionDoc: any = {
                 type: "FACTURA",
                 date: new Date(invoiceDetails.cabecera.fecha.fechaCreacion),
                 externalID: invoiceId,
                 lastSync: new Date(),
                 client: invoiceDetails.cabecera.emisor.razonsocialEmisor,
                 description: code ? invoiceDetails.detalle.documentosRelacionados.ordenCompra[0].recepcion[0].detalleRecepcion[0].descripcion : "",
-                total: invoiceDetails.cabecera.totales.total.montoTotal,
+                total: invoiceDetails.cabecera.totales.total.subTotalNeto || invoiceDetails.cabecera.totales.total.montoTotal,
                 status: invoice.estadoDoc,
                 paymentStatus: invoice.estadoPago,
                 rawValue: invoiceDetails,
                 project: project._id,
-                controlSheet: controlSheet ? controlSheet._id : null,
-                family: family ? family.name : null,
-            }, {upsert: true, new: true});
+            }
+
+            if (controlSheet) {
+                transactionDoc.controlSheet = controlSheet._id;
+            }
+            if (family) {
+                transactionDoc.family = family.name;
+            }
+
+            let transaction = await Transaction.findOneAndUpdate({externalID: invoiceId}, transactionDoc, {upsert: true, new: true});
 
             console.log(`Invoice ${invoiceId} synced successfully`);
 
@@ -234,7 +241,7 @@ export const syncOCs = async (project: any, controlSheets: any[]) => {
                 console.log("-------------------------------------------------");
             }
 
-            let transaction = await Transaction.findOneAndUpdate({externalID: OCId}, {
+            let transactionDoc : any = {
                 type: "OC",
                 date: new Date(OCDetails.cabecera.documento.fechaCreacion),
                 externalID: OCId,
@@ -245,9 +252,17 @@ export const syncOCs = async (project: any, controlSheets: any[]) => {
                 status: OCDetails.cabecera.estado.descripEstadoDocumento,
                 rawValue: OCDetails,
                 project: project._id,
-                controlSheet: controlSheet ? controlSheet._id : null,
-                family: family ? family.name : null,
-            }, {upsert: true, new: true});
+            }
+
+            if (controlSheet) {
+                transactionDoc.controlSheet = controlSheet._id;
+            }
+
+            if (family) {
+                transactionDoc.family = family.name;
+            }
+
+            let transaction = await Transaction.findOneAndUpdate({externalID: OCId}, transactionDoc, {upsert: true, new: true});
 
             console.log(`OC ${OCId} synced successfully`);
         } catch (error) {

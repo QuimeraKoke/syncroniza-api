@@ -41,6 +41,7 @@ export interface IControlSheet extends Document {
     codes: Array<{
         family: string;
         code: string;
+        budget: number;
     }>
     agreements: Array<{
         name: string;
