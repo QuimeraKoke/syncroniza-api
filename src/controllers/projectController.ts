@@ -8,7 +8,7 @@ import {CustomRequest} from "../interfaces/interfaces";
 
 // Create Project - with planifications
 export const createProject = async (req: Request, res: Response) => {
-    const { name, codename, startDate, endDate, budgets, families, workload, organizationId } = req.body;
+    const { name, codename, startDate, endDate, budgets, families, workload, organizationId, credentials } = req.body;
 
     try {
         // Create the project document
@@ -21,6 +21,7 @@ export const createProject = async (req: Request, res: Response) => {
             budgets,
             families,
             workload,
+            credentials,
         });
 
 
@@ -81,15 +82,15 @@ export const updateProject = async (req: CustomRequest, res: Response) => {
         return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const { name, codename, startDate, endDate, budgets, families, workload } = req.body;
+    const { name, codename, startDate, endDate, budgets, families, workload, credentials } = req.body;
 
     try {
         const project = await Project.findById(projectId);
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });
         }
-
-        // Check if the endDate is extended and create new planifications if necessary
+        if(startDate && endDate){
+            // Check if the endDate is extended and create new planifications if necessary
         const oldEndDate = project.endDate;
         const newEndDate = parseISO(endDate);
 
@@ -98,14 +99,19 @@ export const updateProject = async (req: CustomRequest, res: Response) => {
             await updateWeeklyPlanifications(startDate, newEndDate, projectId);
         }
 
-        // Update the project fields
-        project.name = name;
-        project.codename = codename;
         project.startDate = startDate;
         project.endDate = endDate;
-        project.budgets = budgets;
-        project.families = families;
-        project.workload = workload;
+
+        }
+
+
+        // Update the project fields
+        project.name = name || project.name;
+        project.codename = codename || project.codename;
+        project.budgets = budgets || project.budgets;
+        project.families = families || project.families;
+        project.workload = workload || project.workload;
+        project.credentials = credentials || project.credentials;
 
         // Save the updated project
         await project.save();
@@ -113,6 +119,7 @@ export const updateProject = async (req: CustomRequest, res: Response) => {
         res.status(200).json({ message: 'Project updated successfully', project });
     } catch (error) {
         res.status(500).json({ message: 'Error updating project', error });
+        console.log(error)
     }
 };
 

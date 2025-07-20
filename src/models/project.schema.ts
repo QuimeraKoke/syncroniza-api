@@ -1,4 +1,18 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import Crypto from 'crypto';
+
+const SECRET_KEY = 'secret key 123';
+
+// AES-256 needs a 32-byte key
+const key = Crypto.createHash('sha256').update(SECRET_KEY).digest();
+
+function encrypt(text: string): string {
+    const iv = Crypto.randomBytes(16);
+    const cipher = Crypto.createCipheriv('aes-256-cbc', key, iv);
+    let encrypted = cipher.update(text, 'utf8', 'base64');
+    encrypted += cipher.final('base64');
+    return iv.toString('base64') + ':' + encrypted;
+}
 
 // Subdocument Schemas
 const BudgetSchema = new Schema({
@@ -20,6 +34,14 @@ const WorkloadSchema = new Schema({
     family: { type: String, required: true },
 });
 
+const CredentialsSchema = new Schema({
+    companyID: { type: String },
+    companyPW: { type: String },
+    representativeID: { type: String },
+    representativePW: { type: String },
+},{_id: false});
+
+
 // Main Project Schema
 const ProjectSchema = new Schema({
     name: { type: String, required: true },
@@ -32,8 +54,28 @@ const ProjectSchema = new Schema({
     budgets: { type: [BudgetSchema], default: [] },
     families: { type: [FamilySchema], default: [] },
     workload: { type: [WorkloadSchema], default: [] },
+    credentials: { type: CredentialsSchema, required: false },
 }, {
     timestamps: true, // Adds createdAt and updatedAt timestamps
+});
+
+// Pre-save hook to encrypt credentials fields
+ProjectSchema.pre('save', function (next) {
+    if (this.credentials) {
+        const creds = this.credentials;
+        for (const key of ['companyID', 'companyPW', 'representativeID', 'representativePW'] as const) {
+            if (creds[key]) {
+                if (!creds[key].includes(':')) {
+                    try {
+                        creds[key] = encrypt(creds[key]);
+                    } catch (error) {
+                        console.log(`Failed to encrypt ${key}:`, error);
+                    }
+                }
+            }
+        }
+    }
+    next();
 });
 
 // Define the Project model
@@ -60,6 +102,12 @@ export interface IProject extends Document {
         budget: number;
         family: string;
     }>;
+    credentials: {
+        companyID: string ;
+        companyPW: string ;
+        representativeID: string ;
+        representativePW: string ;
+    };
 }
 
 export default mongoose.model<IProject>('Project', ProjectSchema);
