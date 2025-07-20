@@ -15,8 +15,10 @@ if (!MONGO_USER || !MONGO_PASSWORD) {
 let MONGO_URI = '';
 
 if (MONGO_HOST === 'localhost') {
-    MONGO_URI = `mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:27018/${MONGO_DATABASE}`;
+    console.log('Connecting to local MongoDB instance');
+    MONGO_URI = `mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:27017/${MONGO_DATABASE}`;
 } else {
+    console.log('Connecting to MongoDB Atlas');
     MONGO_URI = `mongodb+srv://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}/${MONGO_DATABASE}?retryWrites=true&w=majority`;
 }
 

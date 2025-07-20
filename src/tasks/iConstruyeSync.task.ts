@@ -126,6 +126,7 @@ const syncInvoices = async (project: any, controlSheets: any[]) => {
                 paymentStatus: invoice.estadoPago,
                 rawValue: invoiceDetails,
                 project: project._id,
+                received: true,
             }
 
             if (controlSheet) {
@@ -252,6 +253,7 @@ export const syncOCs = async (project: any, controlSheets: any[]) => {
                 status: OCDetails.cabecera.estado.descripEstadoDocumento,
                 rawValue: OCDetails,
                 project: project._id,
+                received: true,
             }
 
             if (controlSheet) {
@@ -354,6 +356,7 @@ export const syncNNCCs = async (project: any, controlSheets: any[]) => {
                 project: project._id,
                 controlSheet: invoice ? invoice.controlSheet : null,
                 family: invoice ? invoice.family : null,
+                received: true,
             }, {upsert: true, new: true});
 
             console.log(`NNCC ${NNCC.idDocumento} synced successfully`);
