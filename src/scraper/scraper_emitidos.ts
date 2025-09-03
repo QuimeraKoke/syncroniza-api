@@ -7,10 +7,10 @@ import ProjectSchema, { IProject } from '../models/project.schema';
 const browserName = firefox
 const headless = false
 
-async function scrapeDocumentsIssued(project: IProject) {
+async function scrapeDocumentsIssued(project: IProject, asPersonal: boolean = true) {
     const browser = await browserName.launch({
         headless: headless,
-        downloadsPath: 'C:\\Users\\vicen\\OneDrive\\Escritorio\\Documentos_pdf',
+        downloadsPath: `./downloads/${project._id}`,
 
     });
     const page = await browser.newPage();
@@ -25,8 +25,23 @@ async function scrapeDocumentsIssued(project: IProject) {
         await page.locator('#rutcntr').fill(project.credentials.representativeID); //13063091-k
         await page.locator('#clave').fill(project.credentials.representativePW); //Kitita2023
         await page.waitForTimeout(1000);
+
         await page.locator('#bt_ingresar').click();
         console.log("Logged in successfully!");
+        await page.waitForTimeout(3000);
+
+        const titleVisible = await page.isVisible('text=ESCOJA COMO DESEA INGRESAR');
+        if (titleVisible) {
+            if (asPersonal) {
+                console.log("Title 'ESCOJA COMO DESEA INGRESAR' visible, clicking on the first button...");
+                await page.locator('xpath=//*[@id="my-wrapper"]/div[1]/div/p[2]/a[1]').click();
+                await page.waitForTimeout(3000);
+            } else {
+                console.log("Title 'ESCOJA COMO DESEA INGRESAR' visible, clicking on the second button...");
+                await page.locator('xpath=//*[@id="my-wrapper"]/div[1]/div/p[2]/a[2]').click();
+                await page.waitForTimeout(3000);
+            }   
+        }
 
         while (true) {
             await page.waitForTimeout(3000);

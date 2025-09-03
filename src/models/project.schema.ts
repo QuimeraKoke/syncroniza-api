@@ -39,6 +39,7 @@ const CredentialsSchema = new Schema({
     companyPW: { type: String },
     representativeID: { type: String },
     representativePW: { type: String },
+    crossCredential: { type: Boolean, default: false } // Optional field to indicate if credentials are shared across accounts, default is false
 },{_id: false});
 
 
@@ -49,8 +50,8 @@ const ProjectSchema = new Schema({
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     organizationId: { type: String, required: true },
-    apiKey: { type: String, required: true },
-    apiKeyOC: { type: String, required: true },
+    apiKey: { type: String, required: false },
+    apiKeyOC: { type: String, required: false },
     budgets: { type: [BudgetSchema], default: [] },
     families: { type: [FamilySchema], default: [] },
     workload: { type: [WorkloadSchema], default: [] },
@@ -107,6 +108,7 @@ export interface IProject extends Document {
         companyPW: string ;
         representativeID: string ;
         representativePW: string ;
+        crossCredential?: boolean; // Optional field to indicate if credentials are shared across accounts, // default is false
     };
 }
 

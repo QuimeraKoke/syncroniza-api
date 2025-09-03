@@ -9,10 +9,10 @@ const browserName = firefox
 const headless = false
 let Boletas = 0;
 
-async function scrapeDocumentsReceived(project: IProject) {
+async function scrapeDocumentsReceived(project: IProject, asPersonal: boolean = true) {
     const browser = await browserName.launch({
         headless: headless,
-        downloadsPath: 'C:\\Users\\vicen\\OneDrive\\Escritorio\\Documentos_pdf',
+        downloadsPath: `./downloads/${project._id}`,
 
     });
     const page = await browser.newPage();
@@ -29,6 +29,21 @@ async function scrapeDocumentsReceived(project: IProject) {
         await page.waitForTimeout(1000);
         await page.locator('#bt_ingresar').click();
         console.log("Logged in successfully!");
+        await page.waitForTimeout(3000);
+
+        const titleVisible = await page.isVisible('text=ESCOJA COMO DESEA INGRESAR');
+        console.log("Title 'ESCOJA COMO DESEA INGRESAR' visibility:", titleVisible);
+        if (titleVisible) {
+            if (asPersonal) {
+                console.log("Title 'ESCOJA COMO DESEA INGRESAR' visible, clicking on the first button...");
+                await page.locator('xpath=//*[@id="my-wrapper"]/div[1]/div/p[2]/a[1]').click();
+                await page.waitForTimeout(3000);
+            } else {
+                console.log("Title 'ESCOJA COMO DESEA INGRESAR' visible, clicking on the second button...");
+                await page.locator('xpath=//*[@id="my-wrapper"]/div[1]/div/p[2]/a[2]').click();
+                await page.waitForTimeout(3000);
+            }
+        }
 
         while (true) {
             await page.waitForTimeout(3000);

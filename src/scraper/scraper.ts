@@ -43,14 +43,35 @@ async function scrapear (){
     const projects = await projectSchema.find({credentials: {$ne: null}});
     for(let project of projects){
         const decryptProject = decryptCredentials(project)
-        console.log(decryptProject.credentials);
-        scrapeDocumentsIssued(decryptProject);
-        scrapeDocumentsReceived(decryptProject);
-        scrapeBallotsReceived(decryptProject);
-        scrapeBallotsIssued(decryptProject);
+        if (!decryptProject.credentials) {
+            console.log(`No credentials found for project: ${decryptProject.name}`);
+            continue;
+        }
+        let personalCredentials: boolean = decryptProject.credentials.representativeID && decryptProject.credentials.representativePW;
+        let companyCredentials: boolean = decryptProject.credentials.companyID && decryptProject.credentials.companyPW;
+        
+        if (personalCredentials) {
+            console.log("Scrapping personal documents for project:", decryptProject.name);
+            await scrapeDocumentsIssued(decryptProject);
+            await scrapeDocumentsReceived(decryptProject);
+        } else {
+            console.log("Skipping personal documents for project:", decryptProject.name);
+        }
+
+        if (companyCredentials || (decryptProject.credentials.crossCredential && personalCredentials)) {
+            console.log("Scrapping company documents for project:", decryptProject.name);
+            await scrapeDocumentsIssued(decryptProject, false);
+            await scrapeDocumentsReceived(decryptProject, false);
+        } else {
+            console.log(`Missing company credentials for project: ${decryptProject.name}`);
+        }
     }
 }
-scrapear();
+scrapear().then(r => {
+    console.log("Scraping completed successfully");
+    process.exit(0);
+});
+
 
 
 
