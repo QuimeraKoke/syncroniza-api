@@ -121,7 +121,7 @@ const syncInvoices = async (project: any, controlSheets: any[]) => {
                 lastSync: new Date(),
                 client: invoiceDetails.cabecera.emisor.razonsocialEmisor,
                 description: code ? invoiceDetails.detalle.documentosRelacionados.ordenCompra[0].recepcion[0].detalleRecepcion[0].descripcion : "",
-                total: invoiceDetails.cabecera.totales.total.subTotalNeto || invoiceDetails.cabecera.totales.total.montoTotal,
+                total: invoiceDetails.cabecera.totales.neto.montoNeto || invoiceDetails.cabecera.totales.total.montoTotal,
                 status: invoice.estadoDoc,
                 paymentStatus: invoice.estadoPago,
                 rawValue: invoiceDetails,

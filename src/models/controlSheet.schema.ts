@@ -18,7 +18,7 @@ const ObservationSchema = new Schema({
     description: { type: String, required: true },
     realAmount: { type: Number, required: true },
     recoverAmount: { type: Number, required: true },
-    observation: { type: String, required: true },
+    observation: { type: String, required: false },
     family: { type: String, required: true }, // Related to project families by name
 });
 
