@@ -1,7 +1,7 @@
 import connect from '../config/mongo.config';
 import axios from 'axios';
 import Transaction from '../models/transaction.schema';
-import Project, {IProject} from '../models/project.schema';
+import Project, { IProject } from '../models/project.schema';
 import ControlSheet from '../models/controlSheet.schema';
 import moongoose from 'mongoose';
 
@@ -36,11 +36,13 @@ export const getInvoices = async (startDate: Date, endDate: Date, project: IProj
         }
     })
 
-    let tmpStartDate = startDate;
-    // add 30 days to the start date
-    let tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() + 29));
+    let tmpEndDate = endDate;
+    let tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() - 29));
+    if (tmpStartDate < startDate) {
+        tmpStartDate = startDate;
+    }
 
-    while (tmpEndDate <= endDate) {
+    while (tmpEndDate >= startDate) {
         let url = `/cvbf/api/Factura/Buscar?api-version=1.0&IdOrgc=${project.organizationId}&FechaRecepDesde=${dateToString(tmpStartDate)}&FechaRecepHasta=${dateToString(tmpEndDate)}`;
 
         console.log(url);
@@ -51,10 +53,13 @@ export const getInvoices = async (startDate: Date, endDate: Date, project: IProj
 
         invoices = [...invoices, ...response.data];
 
-        // Add 1 day to the start date
-        tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() + 1));
-        // Add 30 days to the end date
-        tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() + 29));
+        // Subtract 1 day from the start date to get the new end date
+        tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() - 1));
+        // Subtract 29 days to get the new start date
+        tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() - 29));
+        if (tmpStartDate < startDate) {
+            tmpStartDate = startDate;
+        }
     }
 
     return invoices;
@@ -114,6 +119,8 @@ const syncInvoices = async (project: any, controlSheets: any[]) => {
                 // continue;
             }
 
+            let existingTransaction = await Transaction.findOne({ externalID: invoiceId }).lean();
+
             let transactionDoc: any = {
                 type: "FACTURA",
                 date: new Date(invoiceDetails.cabecera.fecha.fechaCreacion),
@@ -129,14 +136,14 @@ const syncInvoices = async (project: any, controlSheets: any[]) => {
                 received: true,
             }
 
-            if (controlSheet) {
+            if (controlSheet && (!existingTransaction || !existingTransaction.controlSheet)) {
                 transactionDoc.controlSheet = controlSheet._id;
             }
-            if (family) {
+            if (family && (!existingTransaction || !existingTransaction.family)) {
                 transactionDoc.family = family.name;
             }
 
-            let transaction = await Transaction.findOneAndUpdate({externalID: invoiceId}, transactionDoc, {upsert: true, new: true});
+            let transaction = await Transaction.findOneAndUpdate({ externalID: invoiceId }, transactionDoc, { upsert: true, new: true });
 
             console.log(`Invoice ${invoiceId} synced successfully`);
 
@@ -163,11 +170,13 @@ export const getOCs = async (startDate: Date, endDate: Date, project: IProject) 
         }
     })
 
-    let tmpStartDate = startDate;
-    // add 30 days to the start date
-    let tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() + 29));
+    let tmpEndDate = endDate;
+    let tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() - 29));
+    if (tmpStartDate < startDate) {
+        tmpStartDate = startDate;
+    }
 
-    while (tmpEndDate <= endDate) {
+    while (tmpEndDate >= startDate) {
         let url = `ordencompra/api/ConectorBuscarOrdenCompra`;
         url = `${url}?FechaCreacionDesde=${dateToString(tmpStartDate)}&FechaCreacionHasta=${dateToString(tmpEndDate)}`;
         url = `${url}&IdOrgcOC=${project.organizationId}&IdEstadoOc=-1&IdTipoOc=-1`;
@@ -179,10 +188,13 @@ export const getOCs = async (startDate: Date, endDate: Date, project: IProject) 
 
         OCs = [...OCs, ...response.data];
 
-        // Add 1 day to the start date
-        tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() + 1));
-        // Add 30 days to the end date
-        tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() + 29));
+        // Subtract 1 day from the start date to get the new end date
+        tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() - 1));
+        // Subtract 29 days to get the new start date
+        tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() - 29));
+        if (tmpStartDate < startDate) {
+            tmpStartDate = startDate;
+        }
     }
 
     return OCs;
@@ -242,7 +254,9 @@ export const syncOCs = async (project: any, controlSheets: any[]) => {
                 console.log("-------------------------------------------------");
             }
 
-            let transactionDoc : any = {
+            let existingTransaction = await Transaction.findOne({ externalID: OCId }).lean();
+
+            let transactionDoc: any = {
                 type: "OC",
                 date: new Date(OCDetails.cabecera.documento.fechaCreacion),
                 externalID: OCId,
@@ -256,15 +270,15 @@ export const syncOCs = async (project: any, controlSheets: any[]) => {
                 received: true,
             }
 
-            if (controlSheet) {
+            if (controlSheet && (!existingTransaction || !existingTransaction.controlSheet)) {
                 transactionDoc.controlSheet = controlSheet._id;
             }
 
-            if (family) {
+            if (family && (!existingTransaction || !existingTransaction.family)) {
                 transactionDoc.family = family.name;
             }
 
-            let transaction = await Transaction.findOneAndUpdate({externalID: OCId}, transactionDoc, {upsert: true, new: true});
+            let transaction = await Transaction.findOneAndUpdate({ externalID: OCId }, transactionDoc, { upsert: true, new: true });
 
             console.log(`OC ${OCId} synced successfully`);
         } catch (error) {
@@ -286,11 +300,13 @@ export const getNNCCs = async (startDate: Date, endDate: Date, project: IProject
         }
     })
 
-    let tmpStartDate = startDate;
-    // add 30 days to the start date
-    let tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() + 29));
+    let tmpEndDate = endDate;
+    let tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() - 29));
+    if (tmpStartDate < startDate) {
+        tmpStartDate = startDate;
+    }
 
-    while (tmpEndDate <= endDate) {
+    while (tmpEndDate >= startDate) {
         let url = `/cvbf/api/NotasCorreccion/Buscar?api-version=1.0&IdOrgc=${project.organizationId}&FechaRecepDesde=${dateToString(tmpStartDate)}&FechaRecepHasta=${dateToString(tmpEndDate)}`;
 
         let response = await axiosClient.get(url);
@@ -300,10 +316,13 @@ export const getNNCCs = async (startDate: Date, endDate: Date, project: IProject
 
         NNCCs = [...NNCCs, ...response.data];
 
-        // Add 1 day to the start date
-        tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() + 1));
-        // Add 30 days to the end date
-        tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() + 29));
+        // Subtract 1 day from the start date to get the new end date
+        tmpEndDate = new Date(new Date(tmpStartDate).setDate(tmpStartDate.getDate() - 1));
+        // Subtract 29 days to get the new start date
+        tmpStartDate = new Date(new Date(tmpEndDate).setDate(tmpEndDate.getDate() - 29));
+        if (tmpStartDate < startDate) {
+            tmpStartDate = startDate;
+        }
     }
 
     return NNCCs;
@@ -338,12 +357,14 @@ export const syncNNCCs = async (project: any, controlSheets: any[]) => {
     for (let NNCC of NNCCs) {
         try {
 
+            let existingTransaction = await Transaction.findOne({ externalID: NNCC.idDocumento }).lean();
+
             let invoice = null
             if (NNCC.factAsociada) {
-                invoice = await Transaction.findOne({"rawValue.cabecera.documento.numDocumento": NNCC.factAsociada}).lean();
+                invoice = await Transaction.findOne({ "rawValue.cabecera.documento.numDocumento": NNCC.factAsociada, "type": "FACTURA", "project": project._id }).lean();
             }
 
-            let transaction = await Transaction.findOneAndUpdate({externalID: NNCC.idDocumento}, {
+            let transactionDoc: any = {
                 type: "NNCC",
                 date: new Date(NNCC.fechaRecepcion),
                 externalID: NNCC.idDocumento,
@@ -354,10 +375,18 @@ export const syncNNCCs = async (project: any, controlSheets: any[]) => {
                 status: NNCC.estadoDoc,
                 rawValue: NNCC,
                 project: project._id,
-                controlSheet: invoice ? invoice.controlSheet : null,
-                family: invoice ? invoice.family : null,
                 received: true,
-            }, {upsert: true, new: true});
+            };
+
+            if (invoice && invoice.controlSheet && (!existingTransaction || !existingTransaction.controlSheet)) {
+                transactionDoc.controlSheet = invoice.controlSheet;
+            }
+
+            if (invoice && invoice.family && (!existingTransaction || !existingTransaction.family)) {
+                transactionDoc.family = invoice.family;
+            }
+
+            let transaction = await Transaction.findOneAndUpdate({ externalID: NNCC.idDocumento }, transactionDoc, { upsert: true, new: true });
 
             console.log(`NNCC ${NNCC.idDocumento} synced successfully`);
 
@@ -370,7 +399,7 @@ export const syncNNCCs = async (project: any, controlSheets: any[]) => {
 
 const syncProject = async (projectId: string) => {
     const project = await Project.findById(projectId).lean();
-    const controlSheets = await ControlSheet.find({project: projectId}).lean();
+    const controlSheets = await ControlSheet.find({ project: projectId }).lean();
 
     console.log(`Syncing Invoices for project ${project.name}`);
     await syncInvoices(project, controlSheets);
@@ -396,7 +425,7 @@ const syncProject = async (projectId: string) => {
 export const iConstruyeSync = async () => {
     await connect();
 
-    const projects = await Project.find().sort({createdAt: -1}).lean();
+    const projects = await Project.find({ name: "Tranquila" }).sort({ createdAt: -1 }).lean();
 
     for (let project of projects) {
         await syncProject(project._id.toString());
@@ -405,7 +434,7 @@ export const iConstruyeSync = async () => {
     process.exit(0);
 }
 
-(async () =>  {
+(async () => {
     await iConstruyeSync();
 })();
 
